@@ -1,0 +1,1 @@
+This is the compuatational statistics project of Victor Cohen and Hugues Tavenard.
