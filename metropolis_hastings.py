@@ -7,12 +7,20 @@ def proposal_density(x, mean, covariance):
     return scipy.stats.multivariate_normal.pdf(x, mean=mean, cov=covariance)
 
 
-def rwm_1(initial_value, pi, sigma_2, lbda, n_steps):
+def rwm_no_adapt(initial_value, pi, sigma_2, lbda, n_steps):
     values = np.zeros((n_steps + 1, len(initial_value)))
     values[0] = initial_value
     values_idx = 0
 
+    percentage_done = 0.
+
     for i in range(n_steps):
+        if i > (percentage_done + 0.05) * n_steps:
+            percentage_done += 0.05
+            print("\t{percentage}% of iterations"
+                  .format(percentage=int(round(100 * percentage_done,0))))
+
+
         current_value = values[values_idx]
         mean = current_value
         covariance = sigma_2 * lbda
@@ -41,6 +49,60 @@ def rwm_1(initial_value, pi, sigma_2, lbda, n_steps):
             values[values_idx] = candidate_value
 
     return values[:values_idx+1]
+
+
+def rwm_1(initial_value, pi, gamma, sigma_2, lbda, n_steps, epsilon_1, A_1):
+    """
+    Only the parameter sigma is updated in this version of RWM
+    """
+    values = np.zeros((n_steps + 1, len(initial_value)))
+    values[0] = initial_value
+    values_idx = 0
+    sigma_2_n = sigma_2
+
+    percentage_done = 0.
+    for i in range(n_steps):
+        if i > (percentage_done + 0.05) * n_steps:
+            percentage_done += 0.05
+            print("\t{percentage}% of iterations"
+                  .format(percentage=int(round(100 * percentage_done,0))))
+
+        current_value = values[values_idx]
+        mean = current_value
+        covariance = sigma_2 * lbda
+
+        # Compute the candidate value
+        candidate_value = np.random.multivariate_normal(mean, covariance)
+
+        # Compute the acceptation probability
+        alpha = (
+            pi(candidate_value)
+            / pi(current_value)
+            * proposal_density(
+                  x=current_value,
+                  mean=candidate_value,
+                  covariance=covariance)
+            / proposal_density(
+                  x=candidate_value,
+                  mean=mean,
+                  covariance=covariance)
+        )
+        alpha = min(1, alpha)
+
+        # Accept or reject the candidate value
+        if np.random.rand() < alpha:
+            values_idx += 1
+            values[values_idx] = candidate_value
+
+        # Update sigma_n
+        sigma_n = projection_1(
+            x=np.sqrt(sigma_2_n) + gamma(i) * (alpha - 0.2),
+            epsilon_1=epsilon_1,
+            A_1=A_1,
+        )
+        sigma_2_n = sigma_n**2
+
+    return values[:values_idx+1], sigma_2_n
 
 
 def projection_1(x, epsilon_1, A_1):
@@ -89,14 +151,19 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
     gamma_n = gamma_0
     sigma_2_n = sigma_2_0
 
+    percentage_done = 0.
     for i in range(n_steps):
+        if i > (percentage_done + 0.05) * n_steps:
+            percentage_done += 0.05
+            print("\t{percentage}% of iterations"
+                  .format(percentage=int(round(100 * percentage_done,0))))
+
         current_value = values[values_idx]
 
         # Update lambda_n
         if i > 5000:
             lambda_n = gamma_n + epsilon_2 * np.identity(len(initial_value))
         else:
-            # lambda_n = gamma_0
             lambda_n = gamma_0 + epsilon_2 * np.identity(len(initial_value))
 
         # Step 1 : sample a candidate value
@@ -130,24 +197,23 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
         )
         vec = (current_value - mu_n).reshape((len(current_value), 1))
         if i > 1000:
-        # if i > 10:
             gamma_n_new = projection_2(
                 x=gamma_n + gamma(i) * (vec.dot(vec.T) - gamma_n),
                 A_1=A_1,
             )
         else:
             gamma_n_new = gamma_n
-        sigma_2_n_new = projection_1(
-            x=sigma_2_n + gamma(i) * (alpha - 0.2),
+        sigma_n_new = projection_1(
+            x=np.sqrt(sigma_2_n) + gamma(i) * (alpha - 0.2),
             epsilon_1=epsilon_1,
             A_1=A_1,
         )
         mu_n = mu_n_new
-        sigma_2_n = sigma_2_n_new
+        sigma_2_n = sigma_n_new**2
         gamma_n = gamma_n_new
 
-    print("Final mu :", mu_n)
-    print("Final sigma_2 :", sigma_2_n)
-    print("Final gamma :", gamma_n)
+    # print("Final mu :", mu_n)
+    print("\n\tFinal sigma_2 :", sigma_2_n)
+    # print("Final gamma :", gamma_n)
     return values[:values_idx+1]
 
