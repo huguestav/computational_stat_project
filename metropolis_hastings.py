@@ -69,7 +69,7 @@ def rwm_1(initial_value, pi, gamma, sigma_2, lbda, n_steps, epsilon_1, A_1):
 
         current_value = values[values_idx]
         mean = current_value
-        covariance = sigma_2 * lbda
+        covariance = sigma_2_n * lbda
 
         # Compute the candidate value
         candidate_value = np.random.multivariate_normal(mean, covariance)
@@ -161,7 +161,7 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
         current_value = values[values_idx]
 
         # Update lambda_n
-        if i > 5000:
+        if i > 1000:
             lambda_n = gamma_n + epsilon_2 * np.identity(len(initial_value))
         else:
             lambda_n = gamma_0 + epsilon_2 * np.identity(len(initial_value))
@@ -169,7 +169,10 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
         # Step 1 : sample a candidate value
         mean = current_value
         covariance = sigma_2_n * lambda_n
-        candidate_value = np.random.multivariate_normal(mean=mean, cov=covariance, )
+        candidate_value = np.random.multivariate_normal(
+            mean=mean,
+            cov=covariance,
+        )
 
         # Step 2 : accept or reject
         alpha = (
@@ -191,23 +194,26 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
             current_value = values[values_idx]
 
         # Step 3 : update the adaptative parameters (mu_n, gamma_n, sigma_2_n)
-        mu_n_new = projection_3(
-            x=mu_n + gamma(i) * (current_value - mu_n),
-            A_1=A_1,
-        )
-        vec = (current_value - mu_n).reshape((len(current_value), 1))
         if i > 1000:
+            mu_n_new = projection_3(
+                x=mu_n + gamma(i) * (current_value - mu_n),
+                A_1=A_1,
+            )
+            vec = (current_value - mu_n).reshape((len(current_value), 1))
             gamma_n_new = projection_2(
                 x=gamma_n + gamma(i) * (vec.dot(vec.T) - gamma_n),
                 A_1=A_1,
             )
+            sigma_n_new = projection_1(
+                x=np.sqrt(sigma_2_n) + gamma(i) * (alpha - 0.2),
+                epsilon_1=epsilon_1,
+                A_1=A_1,
+            )
         else:
             gamma_n_new = gamma_n
-        sigma_n_new = projection_1(
-            x=np.sqrt(sigma_2_n) + gamma(i) * (alpha - 0.2),
-            epsilon_1=epsilon_1,
-            A_1=A_1,
-        )
+            mu_n_new = mu_n
+            sigma_n_new = np.sqrt(sigma_2_n)
+
         mu_n = mu_n_new
         sigma_2_n = sigma_n_new**2
         gamma_n = gamma_n_new
@@ -217,3 +223,115 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
     # print("Final gamma :", gamma_n)
     return values[:values_idx+1]
 
+
+def mala_no_adapt(initial_value, pi, D_mala, sigma_2, lbda, n_steps):
+    """
+    Only the parameter sigma is updated in this version of MALA
+    """
+    values = np.zeros((n_steps + 1, len(initial_value)))
+    values[0] = initial_value
+    values_idx = 0
+
+    lbda = lbda + 1e-7 * np.identity(len(initial_value))
+
+    percentage_done = 0.
+    for i in range(n_steps):
+        if i > (percentage_done + 0.05) * n_steps:
+            percentage_done += 0.05
+            print("\t{percentage}% of iterations"
+                  .format(percentage=int(round(100 * percentage_done,0))))
+
+        current_value = values[values_idx]
+        mean = current_value + sigma_2 / 2 * lbda.dot(D_mala(current_value))
+        covariance = sigma_2 * lbda
+
+        # Compute the candidate value
+        candidate_value = np.random.multivariate_normal(mean, covariance)
+        candidate_mean = (
+            candidate_value
+            + sigma_2 / 2 * lbda.dot(D_mala(candidate_value))
+        )
+
+        # Compute the acceptation probability
+        alpha = (
+            pi(candidate_value)
+            / pi(current_value)
+            * proposal_density(
+                  x=current_value,
+                  mean=candidate_mean,
+                  covariance=covariance)
+            / proposal_density(
+                  x=candidate_value,
+                  mean=mean,
+                  covariance=covariance)
+        )
+        alpha = min(1, alpha)
+
+        # Accept or reject the candidate value
+        if np.random.rand() < alpha:
+            values_idx += 1
+            values[values_idx] = candidate_value
+
+    return values[:values_idx+1]
+
+
+
+def mala_1(initial_value, pi, gamma, D_mala, sigma_2, lbda, n_steps,
+           epsilon_1, A_1):
+    """
+    Only the parameter sigma is updated in this version of MALA
+    """
+    values = np.zeros((n_steps + 1, len(initial_value)))
+    values[0] = initial_value
+    values_idx = 0
+    sigma_2_n = sigma_2
+
+    lbda = lbda + 1e-7 * np.identity(len(initial_value))
+
+    percentage_done = 0.
+    for i in range(n_steps):
+        if i > (percentage_done + 0.05) * n_steps:
+            percentage_done += 0.05
+            print("\t{percentage}% of iterations"
+                  .format(percentage=int(round(100 * percentage_done,0))))
+
+        current_value = values[values_idx]
+        mean = current_value + sigma_2_n / 2 * lbda.dot(D_mala(current_value))
+        covariance = sigma_2_n * lbda
+
+        # Compute the candidate value
+        candidate_value = np.random.multivariate_normal(mean, covariance)
+        candidate_mean = (
+            candidate_value
+            + sigma_2_n / 2 * lbda.dot(D_mala(candidate_value))
+        )
+
+        # Compute the acceptation probability
+        alpha = (
+            pi(candidate_value)
+            / pi(current_value)
+            * proposal_density(
+                  x=current_value,
+                  mean=candidate_mean,
+                  covariance=covariance)
+            / proposal_density(
+                  x=candidate_value,
+                  mean=mean,
+                  covariance=covariance)
+        )
+        alpha = min(1, alpha)
+
+        # Accept or reject the candidate value
+        if np.random.rand() < alpha:
+            values_idx += 1
+            values[values_idx] = candidate_value
+
+        # Update sigma_n
+        sigma_n = projection_1(
+            x=np.sqrt(sigma_2_n) + gamma(i) * (alpha - 0.5),
+            epsilon_1=epsilon_1,
+            A_1=A_1,
+        )
+        sigma_2_n = sigma_n**2
+
+    return values[:values_idx+1], sigma_2_n

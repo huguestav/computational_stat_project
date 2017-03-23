@@ -20,7 +20,7 @@ def pi(x):
 
 # Initial values for the adaptative parameters
 gamma_0 = np.identity(20)
-sigma_2_0 = 0.5
+sigma_2_0 = 1
 mu_0 = np.ones(20)
 
 # Adaptation parameters
@@ -49,10 +49,10 @@ for i in range(n_runs):
         epsilon_2=epsilon_2,
         A_1=A_1,
     )
-    # print("\n\tsigma_2 :", round(sigma_2_res, 5))
     acceptance_ratio = (values.shape[0] - 1) / n_steps
     print("\tAcceptance ratio :", round(acceptance_ratio, 5))
     mean_values[i] = np.mean(values, axis=0)[0]
+    print("\tValue :", round(mean_values[i], 5))
 
 print("\nValues :", mean_values)
 print("mean :", round(np.mean(mean_values), 5))

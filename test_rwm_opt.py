@@ -19,10 +19,11 @@ def pi(x):
 # Initial values for the adaptative parameters
 gamma_0 = SIGMA
 sigma_2 = 0.59**2
+# sigma_2 = 0.59
 
 # Test rwm_opt
-n_runs = 3
-n_steps = int(30 * 1e3)
+n_runs = 5
+n_steps = int(50 * 1e3)
 initial_value = 5 * np.ones(20)
 
 mean_values = np.zeros(n_runs)
@@ -38,6 +39,7 @@ for i in range(n_runs):
     acceptance_ratio = (values.shape[0] - 1) / n_steps
     print("\tAcceptance ratio :", acceptance_ratio)
     mean_values[i] = np.mean(values, axis=0)[0]
+    print("\tvalue :", round(mean_values[i], 5))
 
 print("\nValues :", mean_values)
 print("mean :", np.mean(mean_values))
