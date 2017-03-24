@@ -30,14 +30,14 @@ epsilon_2 = 1e-6
 A_1 = 1e7
 
 # Test rwm_2
-n_runs = 3
+n_runs = 1
 n_steps = int(50 * 1e3)
 initial_value = 5 * np.ones(20)
 
 mean_values = np.zeros(n_runs)
 for i in range(n_runs):
     print("\n\tStart rwm_2 algorithm")
-    values = metropolis_hastings.rwm_2(
+    values, mean_square_jump = metropolis_hastings.rwm_2(
         initial_value=initial_value,
         pi=pi,
         gamma=gamma,
@@ -57,10 +57,19 @@ for i in range(n_runs):
 print("\nValues :", mean_values)
 print("mean :", round(np.mean(mean_values), 5))
 print("std :", round(np.std(mean_values), 5))
+print("means square jump : ", mean_square_jump)
 
 print("\nScript completed in %0.2f seconds" % (time() - initial_time))
 
 
 # Plot
 plt.scatter(values[:,0], values[:,1], c='b', s=20)
+plt.show()
+
+timeLimit = 100
+
+plt.acorr(values[:,0],usevlines=True, normed=True, maxlags=timeLimit, lw=2, color = 'blue')
+plt.axis([0, timeLimit, 0, 1])
+plt.ylabel("Autocorrelation Function")
+plt.xlabel("Time (s)")
 plt.show()

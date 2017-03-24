@@ -22,14 +22,14 @@ sigma_2 = 0.59**2
 # sigma_2 = 0.59
 
 # Test rwm_opt
-n_runs = 5
+n_runs = 1
 n_steps = int(50 * 1e3)
 initial_value = 5 * np.ones(20)
 
 mean_values = np.zeros(n_runs)
 for i in range(n_runs):
     print("\n\tStart rwm_opt algorithm")
-    values = metropolis_hastings.rwm_no_adapt(
+    values, mean_square_jump = metropolis_hastings.rwm_no_adapt(
         initial_value=initial_value,
         pi=pi,
         sigma_2=sigma_2,
@@ -44,10 +44,19 @@ for i in range(n_runs):
 print("\nValues :", mean_values)
 print("mean :", np.mean(mean_values))
 print("std :", np.std(mean_values))
+print("means square jump : ", mean_square_jump)
 
 print("\nScript completed in %0.2f seconds" % (time() - initial_time))
 
 
 # Plot
 plt.scatter(values[:,0], values[:,1], c='b', s=20)
+plt.show()
+
+timeLimit = 100
+
+plt.acorr(values[:,0],usevlines=True, normed=True, maxlags=timeLimit, lw=2, color = 'blue')
+plt.axis([0, timeLimit, 0, 1])
+plt.ylabel("Autocorrelation Function")
+plt.xlabel("Time (s)")
 plt.show()

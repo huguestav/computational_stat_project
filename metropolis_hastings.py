@@ -12,6 +12,8 @@ def rwm_no_adapt(initial_value, pi, sigma_2, lbda, n_steps):
     values[0] = initial_value
     values_idx = 0
 
+    mean_square_jump = 0
+    
     percentage_done = 0.
 
     for i in range(n_steps):
@@ -47,8 +49,10 @@ def rwm_no_adapt(initial_value, pi, sigma_2, lbda, n_steps):
         if np.random.rand() < alpha:
             values_idx += 1
             values[values_idx] = candidate_value
+            mean_square_jump = mean_square_jump + np.sqrt(np.trace(covariance))
 
-    return values[:values_idx+1]
+    mean_square_jump = mean_square_jump/(values.shape[0])
+    return values[:values_idx+1], mean_square_jump
 
 
 def rwm_1(initial_value, pi, gamma, sigma_2, lbda, n_steps, epsilon_1, A_1):
@@ -59,6 +63,8 @@ def rwm_1(initial_value, pi, gamma, sigma_2, lbda, n_steps, epsilon_1, A_1):
     values[0] = initial_value
     values_idx = 0
     sigma_2_n = sigma_2
+    
+    mean_square_jump = 0
 
     percentage_done = 0.
     for i in range(n_steps):
@@ -93,6 +99,7 @@ def rwm_1(initial_value, pi, gamma, sigma_2, lbda, n_steps, epsilon_1, A_1):
         if np.random.rand() < alpha:
             values_idx += 1
             values[values_idx] = candidate_value
+            mean_square_jump = mean_square_jump + np.sqrt(np.trace(covariance))
 
         # Update sigma_n
         sigma_n = projection_1(
@@ -101,8 +108,9 @@ def rwm_1(initial_value, pi, gamma, sigma_2, lbda, n_steps, epsilon_1, A_1):
             A_1=A_1,
         )
         sigma_2_n = sigma_n**2
-
-    return values[:values_idx+1], sigma_2_n
+    
+    mean_square_jump = mean_square_jump/(values.shape[0])
+    return values[:values_idx+1], sigma_2_n, mean_square_jump
 
 
 def projection_1(x, epsilon_1, A_1):
@@ -150,6 +158,8 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
     mu_n = mu_0
     gamma_n = gamma_0
     sigma_2_n = sigma_2_0
+    
+    mean_square_jump = 0
 
     percentage_done = 0.
     for i in range(n_steps):
@@ -192,6 +202,7 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
             values_idx += 1
             values[values_idx] = candidate_value
             current_value = values[values_idx]
+            mean_square_jump = mean_square_jump + np.sqrt(np.trace(covariance))
 
         # Step 3 : update the adaptative parameters (mu_n, gamma_n, sigma_2_n)
         if i > 1000:
@@ -220,8 +231,9 @@ def rwm_2(initial_value, pi, gamma, mu_0, gamma_0, sigma_2_0, n_steps,
 
     # print("Final mu :", mu_n)
     print("\n\tFinal sigma_2 :", sigma_2_n)
+    mean_square_jump = mean_square_jump/(values.shape[0])
     # print("Final gamma :", gamma_n)
-    return values[:values_idx+1]
+    return values[:values_idx+1], mean_square_jump
 
 
 def mala_no_adapt(initial_value, pi, D_mala, sigma_2, lbda, n_steps):
@@ -233,6 +245,8 @@ def mala_no_adapt(initial_value, pi, D_mala, sigma_2, lbda, n_steps):
     values_idx = 0
 
     lbda = lbda + 1e-7 * np.identity(len(initial_value))
+    
+    mean_square_jump = 0
 
     percentage_done = 0.
     for i in range(n_steps):
@@ -271,8 +285,11 @@ def mala_no_adapt(initial_value, pi, D_mala, sigma_2, lbda, n_steps):
         if np.random.rand() < alpha:
             values_idx += 1
             values[values_idx] = candidate_value
-
-    return values[:values_idx+1]
+            current_mean = 0.5*np.dot(covariance,D_mala(values[values_idx-1]))
+            mean_square_jump = mean_square_jump + np.sqrt(np.trace(covariance)+np.dot(current_mean.T,current_mean))
+        
+    mean_square_jump =mean_square_jump/(values.shape[0])
+    return values[:values_idx+1], mean_square_jump
 
 
 
@@ -287,6 +304,8 @@ def mala_1(initial_value, pi, gamma, D_mala, sigma_2, lbda, n_steps,
     sigma_2_n = sigma_2
 
     lbda = lbda + 1e-7 * np.identity(len(initial_value))
+    
+    mean_square_jump =0
 
     percentage_done = 0.
     for i in range(n_steps):
@@ -325,6 +344,9 @@ def mala_1(initial_value, pi, gamma, D_mala, sigma_2, lbda, n_steps,
         if np.random.rand() < alpha:
             values_idx += 1
             values[values_idx] = candidate_value
+            current_mean = 0.5*np.dot(covariance,D_mala(values[values_idx-1]))
+            mean_square_jump = mean_square_jump + np.sqrt(np.trace(covariance)+np.dot(current_mean.T,current_mean))
+        
 
         # Update sigma_n
         sigma_n = projection_1(
@@ -333,5 +355,6 @@ def mala_1(initial_value, pi, gamma, D_mala, sigma_2, lbda, n_steps,
             A_1=A_1,
         )
         sigma_2_n = sigma_n**2
-
-    return values[:values_idx+1], sigma_2_n
+    
+    mean_square_jump = mean_square_jump/ (values.shape[0])
+    return values[:values_idx+1], sigma_2_n, mean_square_jump
