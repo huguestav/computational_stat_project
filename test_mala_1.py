@@ -5,7 +5,7 @@ import pdb
 
 import metropolis_hastings
 
-print("Test RWM_1 script", end="\n")
+print("Test MALA_1 script", end="\n")
 initial_time = time()
 np.random.seed(1)
 
@@ -40,9 +40,10 @@ n_steps = int(50 * 1e3)
 initial_value = 5 * np.ones(20)
 
 mean_values = np.zeros(n_runs)
+mean_jumps = np.zeros(n_runs)
 for i in range(n_runs):
     print("\n\tStart mala_1 algorithm")
-    values, sigma_2_res, mean_square_jump = metropolis_hastings.mala_1(
+    values, sigma_2_res = metropolis_hastings.mala_1(
         initial_value=initial_value,
         pi=pi,
         gamma=gamma,
@@ -59,10 +60,13 @@ for i in range(n_runs):
     mean_values[i] = np.mean(values, axis=0)[0]
     print("\tvalue :", round(mean_values[i], 5))
 
+    # Handle jumps
+    mean_jumps[i] = metropolis_hastings.mean_square_jump(values, n_steps)
+
 print("\nValues :", mean_values)
 print("mean :", round(np.mean(mean_values), 5))
 print("std :", round(np.std(mean_values), 5))
-print("mean square jump : ", mean_square_jump)
+print("means square jump : ", round(np.mean(mean_jumps), 5))
 
 print("\nScript completed in %0.2f seconds" % (time() - initial_time))
 
