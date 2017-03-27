@@ -26,7 +26,8 @@ A_1 = 1e7
 
 # Test rwm_1
 n_runs = 1
-n_steps = int(1.41 * 1e3)
+n_steps = int(1.42 * 1e3)
+# n_steps = int(50 * 1e3)
 initial_value = 0.01 * np.ones(11)
 
 mean_jumps = np.zeros(n_runs)

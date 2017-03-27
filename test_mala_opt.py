@@ -31,7 +31,7 @@ sigma_2 = 1.06**2
 
 
 # Test rwm_1
-n_runs = 3
+n_runs = 1
 n_steps = int(50 * 1e3)
 initial_value = 5 * np.ones(20)
 
@@ -74,4 +74,5 @@ plt.acorr(values[:,0],usevlines=True, normed=True, maxlags=timeLimit, lw=2, colo
 plt.axis([0, timeLimit, 0, 1])
 plt.ylabel("Autocorrelation Function")
 plt.xlabel("Time (s)")
+plt.title("MALAOpt")
 plt.show()

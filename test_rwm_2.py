@@ -77,4 +77,5 @@ plt.acorr(values[:,0],usevlines=True, normed=True, maxlags=timeLimit, lw=2, colo
 plt.axis([0, timeLimit, 0, 1])
 plt.ylabel("Autocorrelation Function")
 plt.xlabel("Time (s)")
+plt.title("RWM2")
 plt.show()

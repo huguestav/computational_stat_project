@@ -19,6 +19,7 @@ def pi(x):
 # Initial values for the adaptative parameters
 gamma_0 = SIGMA
 sigma_2 = 0.59**2
+sigma_2 = 0.38
 
 # Test rwm_opt
 n_runs = 1
@@ -61,4 +62,5 @@ plt.acorr(values[:,0],usevlines=True, normed=True, maxlags=timeLimit, lw=2, colo
 plt.axis([0, timeLimit, 0, 1])
 plt.ylabel("Autocorrelation Function")
 plt.xlabel("Time (s)")
+plt.title("RWMOpt")
 plt.show()

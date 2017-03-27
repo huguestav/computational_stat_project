@@ -31,7 +31,7 @@ def D_mala(x):
     grad_log_pi = np.zeros(len(x))
     # Handle the last variable
     beta = x[-1]
-    grad_log_pi[-1] = 17.01 / beta - 1
+    grad_log_pi[-1] = 17.01 / beta - 1 - np.sum(x[:-1])
     # Handle the rest of the variables
     grad_log_pi[:-1] = (p_values + 0.8) / x[:-1] - t_values - beta
 
